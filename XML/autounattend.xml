@@ -79,7 +79,7 @@
         <LogonCount>5</LogonCount>
         <Username>administrator</Username>
         <Password>
-          <Value>VwBpAHoAYQByAGQAMgA5AFAAYQBzAHMAdwBvAHIAZAA=</Value>
+          <Value>changeme</Value>
           <PlainText>false</PlainText>
         </Password>
       </AutoLogon>
