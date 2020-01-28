@@ -1,0 +1,56 @@
+﻿<layout>
+<deployment project="threshold" site="tsd" platform="sw16" vmver="8.0" org="Lab 3241" contact="Support@" AD_Mode="WinThreshold" />
+<console function="mgmt" ip="51" pyhsical="yes" />
+<network gateway="1">
+ <ipv4 prefix="192.168.219" prefixlength="26" subnetmask="255.255.255.128" />
+ <dhcp start="10" end="50" />
+ <ipv6 prefix="2001:470:1f05:9cf" prefixlength="64" />
+ <dns upn="lab3241.net" />
+</network>
+ <size>
+  <vm size="small" vcpu="2" vram="2gb" vhd="64gb" />
+  <vm size="medium" vcpu="2" vram="4gb" vhd="64gb" />
+  <vm size="large" vcpu="4" vram="8gb" vhd="64gb" />
+ </size>
+ <virtual>
+  <!-- wimindex expectations -->
+  <!-- Note: Windows Server 2016 is specified in deployment platform -->
+  <!-- 1 - Windows Server 2016 Standard -->
+  <!-- 2 - Windows Server 2016 Standard (Desktop Experience) -->
+  <!-- 3 - Windows Server 2016 Datacenter -->
+  <!-- 4 - Windows Server 2016 Datacenter (Desktop Experience -->
+  <!-- 10 - Windows 10 Professional -->
+  <vm size="small" wimindex="1" ip="91" function="dc" unit="01" />
+  <vm size="small" wimindex="1" ip="92" function="dc" unit="02" />
+  <vm size="small" wimindex="1" ip="60" function="orca" />
+  <vm size="small" wimindex="1" ip="59" function="esca" />
+  <vm size="small" wimindex="2" ip="58" function="adfs" />
+  <vm size="small" wimindex="2" ip="57" function="adds" />
+  <vm size="large" wimindex="2" ip="56" function="exch" ver="15x" data_size="128gb" data_count="2"/>
+  <vm size="large" wimindex="2" ip="55" function="sfb" ver="6x" vhd="128gb" />
+  <!-- <vm size="medium" wimindex="10" ip="dhcp" function="cwxof16" vhd="128gb" count="3" /> -->
+ </virtual>
+ <stack function="vhost" />
+ <stack function="s2d" />
+ <stack function="dc" />
+ <stack function="iis" />
+ <stack function="exch" />
+ <stack function="sql" />
+ <stack function="sfb" />
+ <stack function="sccm" />
+ <stack function="sp" />
+ <stack function="tfs" />
+ <stack function="adfs" />
+ <stack function="adds" />
+ <stack function="dhcp" />
+ <stack function="wds" />
+ <stack function="orca" />
+ <stack function="esca" />
+ <stack function="cwxof16" />
+ <!-- Keys are KMS Client install keys, located at https://docs.microsoft.com/en-us/windows-server/get-started/kmsclientkeys -->
+ <productkey ver="2016" channel="ltsc" ed="Standard" key="WC2BQ-8NRM3-FDDYY-2BFGV-KHKQY" />
+ <productkey ver="2016" channel="ltsc" ed="Datacenter" key="CB7KF-BWN84-R7R2Y-793K2-8XDDG" /> 
+ <productkey ver="10" channel="sac" ed="pro" key="W269N-WFGWX-YVC9B-4J6C9-T83GX" />
+ <productkey ver="10" channel="sac" ed="ent" key="NPPR9-FWDCX-D2C8J-H872K-2YT43" />
+ <productkey ver="10" channel="sac" ed="wfw" key="NRG8B-VKK3Q-CXVCJ-9G2XF-6Q84J" />
+</layout>
