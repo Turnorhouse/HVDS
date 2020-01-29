@@ -180,7 +180,7 @@ $unattend.unattend.settings.component[5].interfaces.Interface.DNSDomain = ([STRI
 # Set unattend.xml first logon command #3 description and command
 # This runs C:\prebuild.ps1
  $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].Description = 'Begin prebuild process'
- $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;postconfig`""
+ $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;WSUSUpdate`""
 
 # Write the updated autounattend.xml
  $unattend.Save($unattendxml.FullName)
@@ -255,6 +255,8 @@ if ((Test-Path  $WINFIX) -eq 'True')
   {
    $path = 'C:\HVDS'
    $hvds = Get-Item $path
+   $unattendxml = Get-Item ([STRING]::Concat($hvds.FullName,'\XML\autounattend.xml'))
+   [XML]$unattend = (Get-Content $unattendxml.FullName)
    $dest = 'C:\Hyper-V'
    $credxml = ([STRING]::Concat($hvds.FullName,'\XML\creds.xml'))
    $HVDS_Toolpath = ([STRING]::Concat($hvds,'\tools'))
@@ -278,8 +280,11 @@ if ((Test-Path  $WINFIX) -eq 'True')
       {
        $vmname = ([STRING]::Concat($layout.layout.deployment.site,$layout.layout.deployment.platform,$vm.function,$vm.ver,$vm.unit))
       }
-     Stop-VM -Name $vmname -Force
-     Remove-VM -Name $vmname -Force
+      if (!($null -eq (Get-VM -VMName $vmname -ErrorAction SilentlyContinue)))
+      {
+       Stop-VM -VMName $vmname -Force
+       Remove-VM -VMName $vmname -Force
+      }
     }
    if ((Test-Path $dest) -eq 'True')
     {
@@ -294,6 +299,32 @@ if ((Test-Path  $WINFIX) -eq 'True')
      Remove-Item -Recurse -Force $WINFIX
     }
    Get-ChildItem -Path ([STRING]::Concat($hvds,'\ISO'))|Where-Object {$_.Name -notlike '*server*2016*.iso'}|Remove-Item -Recurse -Force
-  }
+   $unattend.unattend.settings.component[2].AutoLogon.Password.value = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[2].AutoLogon.Password.PlainText = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[2].UserAccounts.AdministratorPassword.Value = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[2].UserAccounts.AdministratorPassword.PlainText = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[0].ImageInstall.OSImage.InstallFrom.MetaData.Value = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[3].Interfaces.Interface.UnicastIpAddresses.IpAddress.'#text' = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[3].Interfaces.Interface.Routes.Route.NextHopAddress = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[1].'#text' = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[5].interfaces.Interface.DNSDomain = 'Removed by HVDS_Cleanup'
+   if (($vm.wimindex -eq '1') -or ($vm.wimindex -eq '2'))
+    {
+     $unattend.unattend.settings.component[0].Userdata.ProductKey.key = 'Removed by HVDS_Cleanup'
+    }
+   if (($vm.wimindex -eq '3') -or ($vm.wimindex -eq '4'))
+    {
+     $unattend.unattend.settings.component[0].Userdata.ProductKey.key = 'Removed by HVDS_Cleanup'
+    }
+   $unattend.unattend.settings.component[0].UserData.FullName = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[0].UserData.Organization = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[4].ComputerName = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[1].Description = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[1].CommandLine = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].Description = 'Removed by HVDS_Cleanup'
+   $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = 'Removed by HVDS_Cleanup'
+   $unattend.Save($unattendxml.FullName)
+}
 
 # scratch space
