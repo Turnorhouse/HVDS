@@ -35,7 +35,8 @@ Function NextDC
  New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'DC_Finish' -Value "powershell `". C:\HVDS\POSTCONFIG\NextDC.ps1;DC_Finish`""
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultPassword' -Value (($creds.creds.accounts|Where-Object {$_.hostname -like([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))})|Where-Object {$_.function -like 'AD_Admin'}).pass
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultUserName' -Value ([STRING]::Concat($layout.layout.deployment.project,'\',($creds.creds.accounts|Where-Object {$_.function -like 'AD_Admin'}).user))
- Write-Host 'Starting 60 second sleep before reboot'
+ Write-Host 'Begin 60 second debug sleep'
+ Start-Sleep -Seconds 60
  Restart-Computer
 }
 
@@ -66,5 +67,7 @@ Function DC_Finish
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoAdminLogon' -Value 0
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoLogonCount' -Value ''
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoLogonCount' -Value ''
+ Write-Host 'Begin 60 second debug sleep'
+ Start-Sleep -Seconds 60
  Restart-Computer
 }

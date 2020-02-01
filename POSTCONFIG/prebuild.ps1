@@ -36,8 +36,9 @@ Function WSUSUpdate {
     if ($SearchResult.Count -eq 0) 
      {
       Write-Output 'There are no applicable updates.'|Out-File ([STRING]::Concat($hvdslogs,'\update.log')) -Append
-      Write-Host 'Updates completed, sleeping for 60 seconds and rebooting'
       New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'Postconfig' -Value "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;postconfig`""
+      Write-Host 'Begin 60 second debug sleep'
+      Start-Sleep -Seconds 60
       Restart-Computer
      } 
       else 
@@ -49,11 +50,12 @@ Function WSUSUpdate {
         $Installer = New-Object -ComObject Microsoft.Update.Installer
         $Installer.Updates = $SearchResult
         $Installer.Install()|Out-File ([STRING]::Concat($hvdslogs,'\update.log')) -Append
-        Write-Host 'Starting 60 second sleep and rebooting'
         if (!(Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce).PSObject.Properties.Name -contains 'WSUSUpdate')
         {
           New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'WSUSUpdate' -Value "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;WSUSUpdate`""
         }
+        Write-Host 'Begin 60 second debug sleep'
+        Start-Sleep -Seconds 60
         Restart-Computer
        }
    }
@@ -75,29 +77,36 @@ Function postconfig
     elseif (($node.stack -eq 'dc') -and ($node.stack -ne '01'))
    {
     Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip)))
-    While ($null -eq (Test-Connection ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))-ErrorAction SilentlyContinue))
+    While ($null -eq (Test-Connection ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -ErrorAction SilentlyContinue))
      {
       Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
       Start-Sleep -Seconds 120
      }
     $function = 'dcX'
    }
+    elseif ($node.stack -eq 'orca')
+     {
+      Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))),([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '02'}).ip)))
+      Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds. This node will NOT be domain joined.'))
+      Start-Sleep -Seconds 120
+      $function = $node.stack
+     }
     else
    {
     $function = $node.stack
+    Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))),([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '02'}).ip)))
     While ($null -eq (Test-Connection ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))-ErrorAction SilentlyContinue))
      {
       Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
       Start-Sleep -Seconds 120
      }
-     $user = ([STRING]::Concat($layout.layout.deployment.project,'\',($creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).user))
+     $user = ([STRING]::Concat($layout.layout.deployment.project,'\',($creds.creds.accounts|Where-Object {$_.function -like 'AD_Admin'}).user))
      $pass = ConvertTo-SecureString -AsPlainText -Force ($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).pass
      $adlogon = New-Object System.Management.Automation.PSCredential ($user,$pass)
      Add-Computer -DomainName ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -Credential $adlogon
      Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultUserName' -Value ([STRING]::Concat($layout.layout.deployment.project,'\',($creds.creds.accounts|Where-Object {$_.function -like 'AD_Admin'}).user))
      Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultPassword' -Value (($creds.creds.accounts|Where-Object {$_.hostname -like([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))})|Where-Object {$_.function -like 'AD_Admin'}).pass  
-
-   }
+    }
   }
  
 Switch ($function)
@@ -113,6 +122,8 @@ Switch ($function)
   orca
    {
     Write-Host 'Build out the Offline Root Certificate Authority'
+    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'ORCA' -Value ([STRING]::Concat('powershell.exe . ',$hvds,'\postconfig\ORCA.ps1;ORCA'))
+
    }
   esca
    {
@@ -135,7 +146,7 @@ Switch ($function)
     Write-Host 'Build out Skype For Business server'
    }
  }
-Write-Host 'Begin 30 second sleep'
-Start-Sleep -Seconds 30
+ Write-Host 'Begin 60 second debug sleep'
+ Start-Sleep -Seconds 60
 Restart-Computer
 }

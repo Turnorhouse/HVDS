@@ -1,7 +1,7 @@
 Function FirstDC
 {
  $hvds = 'C:\HVDS'
- if (!(Test-Path ([STRING]::Concat($hvds,'logs'))))
+ if (!(Test-Path ([STRING]::Concat($hvds,'\logs'))))
   {
    New-Item -ItemType Directory -Path ([STRING]::Concat($hvds,'\logs'))
   }
@@ -29,6 +29,8 @@ Function FirstDC
  -Force:$true `
  -SafeModeAdministratorPassword (ConvertTo-SecureString -AsPlainText -Force ($creds.creds.accounts|Where-Object {$_.hostname -like $ENV:COMPUTERNAME}|Where-Object {$_.Function -like 'AD_Safe'}).pass)
  New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'DC_Finish' -Value "powershell `". C:\HVDS\POSTCONFIG\firstdc.ps1;DC_Finish`""
+ Write-Host 'Begin 60 second debug sleep'
+ Start-Sleep -Seconds 60
  Restart-Computer
 }
 
@@ -51,7 +53,10 @@ Function DC_Finish
  } 
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoAdminLogon' -Value 0
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoLogonCount' -Value ''
+ Start-Sleep -Seconds 60
  Set-ADAccountPassword -Identity ($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).user -NewPassword (ConvertTo-SecureString -AsPlainText -Force ($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).pass) -Reset
+ Write-Host 'Begin 60 second debug sleep'
+ Start-Sleep -Seconds 60
  Restart-Computer
 }
 

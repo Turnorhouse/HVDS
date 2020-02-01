@@ -180,7 +180,7 @@ $unattend.unattend.settings.component[5].interfaces.Interface.DNSDomain = ([STRI
 # Set unattend.xml first logon command #3 description and command
 # This runs C:\prebuild.ps1
  $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].Description = 'Begin prebuild process'
- $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;WSUSUpdate`""
+ $unattend.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;postconfig`""
 
 # Write the updated autounattend.xml
  $unattend.Save($unattendxml.FullName)
@@ -218,6 +218,7 @@ $vcpu = (($layout.layout.size.vm|Where-Object {$_.size -like $vm.size}).vcpu)
  Set-VM -VMName $vmname -ProcessorCount $vcpu
  Set-VMMemory -VMName $vmname -DynamicMemoryEnabled:$false
  Set-VMFirmware -VMName $vmname -FirstBootDevice $dvd
+ Disable-VMIntegrationService -VMName $vmname -Name 'Time Synchronization'
 
 # Test to see if host is Windows Professional, and if so, disable automatic checkpoints
  if ((Get-WindowsEdition -Online).Edition -eq 'Professional')
@@ -235,10 +236,11 @@ $vcpu = (($layout.layout.size.vm|Where-Object {$_.size -like $vm.size}).vcpu)
    Add-VMHardDiskDrive -VMName $vmname -Path ([STRING]::Concat($dest,'\',$vmname,'\',$vmname,'_data',$disk,'.vhdx'))
   }
  }
- if ($vm.function -eq 'dc')
-  {
-   Start-VM -Name $vmname
-  }
+# if ($vm.function -eq 'dc')
+#  {
+#   Start-VM -Name $vmname
+#  }
+Start-VM -Name $vmname
 }
 # End VM build and configure
 
@@ -282,7 +284,7 @@ if ((Test-Path  $WINFIX) -eq 'True')
       }
       if (!($null -eq (Get-VM -VMName $vmname -ErrorAction SilentlyContinue)))
       {
-       Stop-VM -VMName $vmname -Force
+       Stop-VM -VMName $vmname -Force -TurnOff
        Remove-VM -VMName $vmname -Force
       }
     }
