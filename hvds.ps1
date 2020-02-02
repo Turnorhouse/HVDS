@@ -4,55 +4,22 @@ Function HVDS_Build
 $path = 'C:\HVDS'
 $dest = 'C:\Hyper-V'
 
-# Begin the messy process of testing for paths and files. 
-if (!(Test-Path $path))
- {
-  Write-Host ([STRING]::Concat($path,' does not exist, can not continue.'))
-  Break
- }
+# Begin the messy process of testing for paths and files.
 $hvds = Get-Item $path
 $HVDS_Toolpath = ([STRING]::Concat($hvds,'\tools'))
 $winfix = ([STRING]::Concat($HVDS_Toolpath,'\winfix'))
-
-if (!(Test-Path ([STRING]::Concat($path,'\XML'))))
+switch ($hvds)
  {
-  Write-Host ([STRING]::Concat($path,'\XML does not exist, can not continue.'))
-  Break
+  {!(Test-Path ($hvds.FullName +'\XML'))} {Write-Host ($hvds.FullName +'\XML does not exist, can not continue.') ;break}
+  {!(Test-Path ($hvds.FullName +'\XML\layout.xml'))} {Write-Host ($hvds.FullName +'\XML\layout.xml does not exist, can not continue.') ;break}
+  {!(Test-Path ($hvds.FullName +'\XML\autounattend.xml'))} {Write-Host ($hvds.FullName +'\XML\autounattend.xml does not exist, can not continue.') ;break}
+  {!(Test-Path ($hvds.FullName +'\POSTCONFIG'))} {Write-Host ($hvds.FullName +'\POSTCONFIG does not exist, can not continue.') ;break}
+  {!(Test-Path ($hvds.FullName +'\TOOLS'))} {Write-Host ($hvds.FullName +'\TOOLS does not exist, can not continue.') ;break}
+  {!(Test-Path ($hvds.FullName +'\TOOLS\oscdimg.exe'))} {Write-Host ($hvds.FullName +'\TOOLS\oscdimg.exe does not exist, can not continue') ;break}
+  {!(Test-Path ($dest))} {New-Item -Path $dest -ItemType Directory}
+  {!(Test-Path ($hvds.FullName +'\TOOLS\WINFIX'))} {New-Item -ItemType Directory ($hvds.FullName +'\TOOLS\WINFIX')}
+  default {Write-Host 'Test completed, continuing.'}
  }
-if (!(Test-Path ([STRING]::Concat($path,'\XML\layout.xml'))))
- {
-  Write-Host ([STRING]::Concat($path,'\XML\layout.xml does not exist, can not continue.'))
-  Break
- }
- if (!(Test-Path ([STRING]::Concat($path,'\XML\autounattend.xml'))))
- {
-  Write-Host ([STRING]::Concat($path,'\XML\autounattend.xml does not exist, can not continue.'))
-  Break
- }
-if (!(Test-Path ([STRING]::Concat($path,'\POSTCONFIG'))))
- {
-  Write-Host ([STRING]::Concat($path,'\POSTCONFIG does not exist, can not continue.'))
-  Break
- }
-if (!(Test-Path $dest))
- {
-  New-Item -Path $dest -ItemType Directory
- }
- if (Test-Path $HVDS_Toolpath)
-  {
-   $OSCDIMGCMD = ([STRING]::Concat($HVDS_Toolpath,'\oscdimg.exe'))
-    if (!(Test-Path $OSCDIMGCMD))
-     {
-      Write-Host -BackgroundColor Black -ForegroundColor Red 'OSCDIMG missing, HVDS can NOT continue.'
-      Break
-     }
-    if ((Test-Path  $WINFIX) -eq 'True')
-     {
-      New-Item -ItemType Directory -Path ([STRING]::Concat($HVDS_Toolpath,'\winfix'))
-     }
-  }
-
-
 # End the messy process of testing for paths and files
 
 # Start pulling info from config files.
