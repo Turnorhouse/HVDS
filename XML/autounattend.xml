@@ -44,7 +44,7 @@
           <InstallFrom>
             <MetaData wcm:action="add">
               <Key>/IMAGE/INDEX</Key>
-              <Value>Removed by HVDS_Cleanup</Value>
+              <Value>2</Value>
             </MetaData>
           </InstallFrom>
           <InstallTo>
@@ -56,11 +56,11 @@
       <UserData>
         <ProductKey>
           <WillShowUI>OnError</WillShowUI>
-          <Key>Removed by HVDS_Cleanup</Key>
+          <Key>WC2BQ-8NRM3-FDDYY-2BFGV-KHKQY</Key>
         </ProductKey>
         <AcceptEula>true</AcceptEula>
-        <FullName>Removed by HVDS_Cleanup</FullName>
-        <Organization>Removed by HVDS_Cleanup</Organization>
+        <FullName>Support@</FullName>
+        <Organization>Lab 3241</Organization>
       </UserData>
     </component>
     <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -78,8 +78,8 @@
     <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <AutoLogon>
         <Password>
-          <Value>Removed by HVDS_Cleanup</Value>
-          <PlainText>Removed by HVDS_Cleanup</PlainText>
+          <Value>6aV4cEXBK0t2</Value>
+          <PlainText>true</PlainText>
         </Password>
         <LogonCount>99</LogonCount>
         <Username>Administrator</Username>
@@ -87,8 +87,8 @@
       </AutoLogon>
       <UserAccounts>
         <AdministratorPassword>
-          <Value>Removed by HVDS_Cleanup</Value>
-          <PlainText>Removed by HVDS_Cleanup</PlainText>
+          <Value>6aV4cEXBK0t2</Value>
+          <PlainText>true</PlainText>
         </AdministratorPassword>
       </UserAccounts>
       <FirstLogonCommands>
@@ -99,13 +99,13 @@
         </SynchronousCommand>
         <SynchronousCommand wcm:action="add">
           <Order>2</Order>
-          <Description>Removed by HVDS_Cleanup</Description>
-          <CommandLine>Removed by HVDS_Cleanup</CommandLine>
+          <Description>Copy prebuild script to VM and jumpstart postconfig process</Description>
+          <CommandLine>powershell "Copy-Item ([STRING]::Concat((Get-Volume|Where-Object {$_.FileSystemLabel -like ([STRING]::Concat($ENV:COMPUTERNAME,'*'))}).driveletter,':\HVDS')) -Destination 'C:\' -Recurse -Force"</CommandLine>
         </SynchronousCommand>
         <SynchronousCommand wcm:action="add">
           <Order>3</Order>
-          <Description>Removed by HVDS_Cleanup</Description>
-          <CommandLine>Removed by HVDS_Cleanup</CommandLine>
+          <Description>Begin prebuild process</Description>
+          <CommandLine>powershell ". C:\HVDS\POSTCONFIG\prebuild.ps1;postconfig"</CommandLine>
         </SynchronousCommand>
       </FirstLogonCommands>
     </component>
@@ -119,31 +119,31 @@
             <DhcpEnabled>false</DhcpEnabled>
           </Ipv4Settings>
           <UnicastIpAddresses>
-            <IpAddress wcm:action="add" wcm:keyValue="1">Removed by HVDS_Cleanup</IpAddress>
+            <IpAddress wcm:action="add" wcm:keyValue="1">192.168.219.94/26</IpAddress>
           </UnicastIpAddresses>
           <Routes>
             <Route wcm:action="add">
               <Identifier>1</Identifier>
               <Prefix>0.0.0.0/0</Prefix>
               <Metric>20</Metric>
-              <NextHopAddress>Removed by HVDS_Cleanup</NextHopAddress>
+              <NextHopAddress>192.168.219.1</NextHopAddress>
             </Route>
           </Routes>
         </Interface>
       </Interfaces>
     </component>
     <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <ComputerName>Removed by HVDS_Cleanup</ComputerName>
+      <ComputerName>tsdsw16esca</ComputerName>
     </component>
     <component name="Microsoft-Windows-DNS-Client" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <Interfaces>
         <Interface wcm:action="add">
           <DNSServerSearchOrder>
-            <IpAddress wcm:action="add" wcm:keyValue="1">Removed by HVDS_Cleanup</IpAddress>
+            <IpAddress wcm:action="add" wcm:keyValue="1">4.2.2.2</IpAddress>
             <IpAddress wcm:action="add" wcm:keyValue="2">Removed by HVDS_Cleanup</IpAddress>
           </DNSServerSearchOrder>
           <Identifier>Ethernet</Identifier>
-          <DNSDomain>Removed by HVDS_Cleanup</DNSDomain>
+          <DNSDomain>threshold.lab3241.net</DNSDomain>
         </Interface>
       </Interfaces>
     </component>

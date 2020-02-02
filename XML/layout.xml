@@ -22,12 +22,12 @@
   <!-- 10 - Windows 10 Professional -->
   <vm size="small" wimindex="1" ip="91" function="dc" unit="01" />
   <vm size="small" wimindex="1" ip="92" function="dc" unit="02" />
-  <vm size="small" wimindex="1" ip="60" function="orca" />
-  <vm size="small" wimindex="1" ip="59" function="esca" />
-  <vm size="small" wimindex="2" ip="58" function="adfs" />
-  <vm size="small" wimindex="2" ip="57" function="adds" />
-  <vm size="large" wimindex="2" ip="56" function="exch" ver="15x" data_size="128gb" data_count="2"/>
-  <vm size="large" wimindex="2" ip="55" function="sfb" ver="6x" vhd="128gb" />
+  <vm size="small" wimindex="2" ip="93" function="orca" />
+  <vm size="small" wimindex="2" ip="94" function="esca" />
+  <!-- <vm size="small" wimindex="2" ip="58" function="adfs" /> -->
+  <!-- <vm size="small" wimindex="2" ip="57" function="adds" /> -->
+  <!-- <vm size="large" wimindex="2" ip="56" function="exch" ver="15x" data_size="128gb" data_count="2"/> -->
+  <!-- <vm size="large" wimindex="2" ip="55" function="sfb" ver="6x" vhd="128gb" /> -->
   <!-- <vm size="medium" wimindex="10" ip="dhcp" function="cwxof16" vhd="128gb" count="3" /> -->
  </virtual>
  <stack function="vhost" />
