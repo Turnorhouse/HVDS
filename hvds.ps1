@@ -118,10 +118,10 @@ ForEach ($vm in $layout.layout.virtual.vm)
 $unattend.unattend.settings.component[3].Interfaces.Interface.UnicastIpAddresses.IpAddress.'#text' = ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',$vm.ip,'/',$layout.layout.network.ipv4.prefixlength))
 $unattend.unattend.settings.component[3].Interfaces.Interface.Routes.Route.NextHopAddress = ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',$layout.layout.network.gateway))
 # Adjusting DNS for testing
-$unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = '4.2.2.2'
+# $unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = '4.2.2.2'
 
-#$unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',($layout.layout.virtual.vm|Where-Object {$_.function -like 'DC'}).ip[0]))
-#$unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[1].'#text' = ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',($layout.layout.virtual.vm|Where-Object {$_.function -like 'DC'}).ip[1]))
+$unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',($layout.layout.virtual.vm|Where-Object {$_.function -like 'DC'}).ip[0]))
+$unattend.unattend.settings.component[5].interfaces.Interface.DNSServerSearchOrder.IpAddress[1].'#text' = ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',($layout.layout.virtual.vm|Where-Object {$_.function -like 'DC'}).ip[1]))
 $unattend.unattend.settings.component[5].interfaces.Interface.DNSDomain = ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))
  
 # Set unattend.xml product key
@@ -167,7 +167,7 @@ $unattend.unattend.settings.component[5].interfaces.Interface.DNSDomain = ([STRI
  $OSCDIMGCMD = ($hvds.FullName +'\TOOLS\oscdimg.exe')
  $OSCDBUILD = [STRING]::Concat($OSCDIMGCMD,' -bootdata:2#p0,e,b"',$WINFIX,'\boot\etfsboot.com"#pEF,e,b"',$WINFIX,'\efi\Microsoft\boot\efisys.bin" -o -h -m -u2 -udfver102 -l"',$vmname,'_WIN_ISO" "',$WINFIX,'\" "C:\HVDS\ISO\',$vmname,'_WIN.iso"')
  Invoke-Expression $OSCDBUILD
- 
+
 # Define VM hardware settings based on $layout.layout.virtual.vm.size
 $vram = (($layout.layout.size.vm|Where-Object {$_.size -like $vm.size}).vram)
 $vcpu = (($layout.layout.size.vm|Where-Object {$_.size -like $vm.size}).vcpu)
