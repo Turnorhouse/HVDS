@@ -18,6 +18,7 @@ switch ($hvds)
   {!(Test-Path ($hvds.FullName +'\TOOLS\oscdimg.exe'))} {Write-Host ($hvds.FullName +'\TOOLS\oscdimg.exe does not exist, can not continue') ;break}
   {!(Test-Path ($dest))} {New-Item -Path $dest -ItemType Directory}
   {!(Test-Path ($hvds.FullName +'\TOOLS\WINFIX'))} {New-Item -ItemType Directory ($hvds.FullName +'\TOOLS\WINFIX')}
+  {!(Test-Path ($hvds.Fullname +'\LOGS'))} {New-Item -ItemType Directory ($hvds.FullName +'\LOGS')}
   default {Write-Host 'Test completed, continuing.'}
  }
 # End the messy process of testing for paths and files
@@ -27,6 +28,7 @@ switch ($hvds)
 [XML]$layout = Get-Content ([STRING]::Concat($hvds.FullName,'\XML\layout.xml'))
 $unattendxml = Get-Item ([STRING]::Concat($hvds.FullName,'\XML\autounattend.xml'))
 [XML]$unattend = (Get-Content $unattendxml.FullName)
+
 
 # Build the start of our password XML file. Note that this is plain text, human readable, and exists ONLY for the process of allowing the user to change passwords.
 [System.Xml.XmlDocument]$credlist = New-Object System.Xml.XmlDocument
@@ -50,7 +52,7 @@ $nic1 = 'vLAN'
 
 # Fix Windows ISO (obnoxious "Press any key to boot from DVD...")
 $winiso = Mount-DiskImage (Get-ChildItem -Path ([STRING]::Concat($hvds,'\ISO')) | Where-Object {$_.Name -like '*server*2016*.iso'}).FullName -PassThru | Get-Volume
-Copy-Item ([STRING]::Concat($winiso.DriveLetter,':\'))  $WINFIX -Recurse -Verbose
+Copy-Item -Path ([STRING]::Concat($winiso.DriveLetter,':\*')) -Destination $WINFIX -Recurse -Verbose
 Rename-Item ([STRING]::Concat($WINFIX,'\efi\microsoft\boot\cdboot.efi')) ([STRING]::Concat($WINFIX,'\efi\microsoft\boot\cdboot_prompt.efi'))
 Rename-Item $WINFIX\efi\microsoft\boot\cdboot_noprompt.efi $WINFIX\efi\microsoft\boot\cdboot.efi
 Rename-Item $WINFIX\efi\microsoft\boot\efisys.bin $WINFIX\efi\microsoft\boot\efisys_prompt.bin
@@ -162,9 +164,10 @@ $unattend.unattend.settings.component[5].interfaces.Interface.DNSDomain = ([STRI
 # End ugly hack to get around a broken Copy-Item 
 
  Copy-Item ($unattendxml).FullName -Destination ([STRING]::Concat($WINFIX,'\autounattend.xml')) -Verbose -Force
+ $OSCDIMGCMD = ($hvds.FullName +'\TOOLS\oscdimg.exe')
  $OSCDBUILD = [STRING]::Concat($OSCDIMGCMD,' -bootdata:2#p0,e,b"',$WINFIX,'\boot\etfsboot.com"#pEF,e,b"',$WINFIX,'\efi\Microsoft\boot\efisys.bin" -o -h -m -u2 -udfver102 -l"',$vmname,'_WIN_ISO" "',$WINFIX,'\" "C:\HVDS\ISO\',$vmname,'_WIN.iso"')
  Invoke-Expression $OSCDBUILD
-
+ 
 # Define VM hardware settings based on $layout.layout.virtual.vm.size
 $vram = (($layout.layout.size.vm|Where-Object {$_.size -like $vm.size}).vram)
 $vcpu = (($layout.layout.size.vm|Where-Object {$_.size -like $vm.size}).vcpu)
