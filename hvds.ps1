@@ -86,7 +86,7 @@ ForEach ($vm in $layout.layout.virtual.vm)
  $newcred = $creds.AppendChild($credlist.CreateElement('accounts'))
  $newcred.SetAttribute('hostname',$vmname)
  $newcred.SetAttribute('user','Administrator')
- $newcred.SetAttribute('pass',(-join ((48..57) + (65..90) + (97..122)| Get-Random -Count 12 | ForEach-Object {[CHAR]$_})))
+ $newcred.SetAttribute('pass',(-join ((48..57) + (65..90) + (97..122) | Get-Random -Count 12 | ForEach-Object {[CHAR]$_})+'1Aa'))
  $newcred.SetAttribute('function','local')
  if ($vm.function -like 'DC')
   {
