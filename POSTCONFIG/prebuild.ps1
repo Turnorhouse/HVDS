@@ -128,6 +128,7 @@ Switch ($function)
   esca
    {
     Write-Host 'Build out the Enterprise Subordinate Certificate Authority'
+    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'ESCA' -Value ([STRING]::Concat('powershell.exe . ',$hvds,'\postconfig\ESCA.ps1;ESCA'))
    }
   adfs
    {
