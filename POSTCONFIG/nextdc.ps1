@@ -12,11 +12,12 @@ Function NextDC
  $user = ([STRING]::Concat($layout.layout.deployment.project,'\',($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).user))
  $pass = ConvertTo-SecureString -AsPlainText -Force ($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).pass
  $adlogon = New-Object System.Management.Automation.PSCredential ($user,$pass)
- While ($null -eq (Test-Connection ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))))
- {
-  Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
-  Start-Sleep -Seconds 120
- }
+ #While ($null -eq (Test-Connection ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))))
+ #{
+ # Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
+ # Start-Sleep -Seconds 120
+ #}
+ 
  Add-WindowsFeature AD-Domain-Services
  Import-Module ADDSDeployment
  Install-ADDSDomainController `
@@ -44,7 +45,7 @@ Function DC_Finish
 {
  $hvds = 'C:\HVDS'
  $hvdslogs = ([STRING]::Concat($hvds,'\logs'))
- [XML]$creds = Get-Content ([STRING]::Concat($hvds,'\XML\creds.xml'))
+ # [XML]$creds = Get-Content ([STRING]::Concat($hvds,'\XML\creds.xml'))
  [XML]$layout = Get-Content ([STRING]::Concat($hvds,'\XML\layout.xml'))
  if (!(Test-Path -Path ([STRING]::Concat($hvdslogs,'\AD.log'))))
   {

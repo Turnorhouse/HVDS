@@ -60,8 +60,6 @@ Function WSUSUpdate {
        }
    }
 
-
-
 Function postconfig
  {
   $hvds = 'C:\HVDS'
@@ -77,7 +75,7 @@ Function postconfig
     elseif (($node.stack -eq 'dc') -and ($node.stack -ne '01'))
    {
     Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip)))
-    While ($null -eq (Test-Connection ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -ErrorAction SilentlyContinue))
+    While ($null -eq (Test-Connection ([STRING]::Concat('hvdsbuild.',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -ErrorAction SilentlyContinue))
      {
       Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
       Start-Sleep -Seconds 120
@@ -87,15 +85,18 @@ Function postconfig
     elseif ($node.stack -eq 'orca')
      {
       Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))),([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '02'}).ip)))
-      Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds. This node will NOT be domain joined.'))
-      Start-Sleep -Seconds 120
+      While ($null -eq (Test-Connection ([STRING]::Concat('hvdsbuild.',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -ErrorAction SilentlyContinue))
+       {
+        Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
+        Start-Sleep -Seconds 120
+       }
       $function = $node.stack
      }
     else
    {
     $function = $node.stack
     Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))),([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '02'}).ip)))
-    While ($null -eq (Test-Connection ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))-ErrorAction SilentlyContinue))
+    While ($null -eq (Test-Connection ([STRING]::Concat('hvdsbuild.',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))-ErrorAction SilentlyContinue))
      {
       Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
       Start-Sleep -Seconds 120

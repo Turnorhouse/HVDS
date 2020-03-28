@@ -45,6 +45,7 @@ Function DC_Finish
    New-Item -ItemType File -Path ([STRING]::Concat($hvdslogs,'\AD.log'))
   }
  $hvds_ad_report = [STRING]::Concat($hvdslogs,'\',$layout.layout.deployment.project.ToUpper(),'.txt')
+ Add-DNSServerResourceRecordA -Name 'hvdsbuild' -ZoneName ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -IPv4Address ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))) -TimeToLive '00:15:00'
  Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))),([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '02'}).ip)))
  dcdiag.exe > $hvds_ad_report
  if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon').PSObject.Properties.Name -contains 'DefaultPassword')
@@ -53,15 +54,16 @@ Function DC_Finish
  } 
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoAdminLogon' -Value 0
  Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoLogonCount' -Value ''
- Start-Sleep -Seconds 60
  Set-ADAccountPassword -Identity ($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).user -NewPassword (ConvertTo-SecureString -AsPlainText -Force ($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).pass) -Reset
- Write-Host 'Begin 60 second debug sleep'
- Start-Sleep -Seconds 60
- Restart-Computer
+ Start-Sleep -Seconds 10
+ logoff.exe
+# New-PSDrive -Root ([STRING]::Concat('\\',$layout.layout.network.ipv4.prefix,'.',($layout.layout.console|Where-Object {$_.function -eq 'mgmt'}).ip,'\HVDS')) -PSProvider FileSystem -Name 'H'
+# Copy-Item -Path $hvds_ad_report -Destination 'H:\LOGS' -Verbose
+# Start-Sleep -Seconds 600
 }
 
 
-
+([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip)))
 
 Function Disable_Autologon
  {
