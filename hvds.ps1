@@ -7,6 +7,7 @@ Function HVDS_Build
   $hvdsdir.ShowDialog()|Out-Null
   $hvdsdest = New-Object System.Windows.Forms.FolderBrowserDialog
   $hvdsdest.Description = 'Select VM destination...'
+  $hvdsdest.RootFolder = 'MyComputer'
   $hvdsdest.ShowDialog()|Out-Null
   $hvdswiniso = New-Object System.Windows.Forms.OpenFileDialog
   $hvdswiniso.filter = 'Windows ISO (*windows*.iso)| *windows*.iso'
@@ -221,6 +222,7 @@ Function HVDS_Cleanup
   $hvdsdir.ShowDialog()|Out-Null
   $hvdsdest = New-Object System.Windows.Forms.FolderBrowserDialog
   $hvdsdest.Description = 'Select VM destination...'
+  $hvdsdest.RootFolder = 'MyComputer'
   $hvdsdest.ShowDialog()|Out-Null
   [XML]$layoutxml = Get-Content ($hvdsdir.SelectedPath+'\XML\layout.xml')
   [XML]$unattendxml = Get-Content ($hvdsdir.SelectedPath+'\XML\autounattend.xml')
