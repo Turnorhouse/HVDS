@@ -86,7 +86,7 @@ Function HVDS_Build
    {
 # Determine service version and count (ex1501, dc02, sfb6x, etc) and set $vmname
 # Note that some VM's may have neither service version or count in hostname.
-    Switch ($vmname)
+    Switch ($switch)
      {
       {($null -eq $vm.ver) -and ($null -eq $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function}
       {($null -ne $vm.ver) -and ($null -eq $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function+$vm.ver}
@@ -228,7 +228,7 @@ Function HVDS_Cleanup
   [XML]$unattendxml = Get-Content ($hvdsdir.SelectedPath+'\XML\autounattend.xml')
   ForEach ($vm in $layoutxml.layout.virtual.vm)
    {
-    Switch ($vmname)
+    Switch ($switch)
      {
       {($null -eq $vm.ver) -and ($null -eq $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function}
       {($null -ne $vm.ver) -and ($null -eq $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function+$vm.ver}
