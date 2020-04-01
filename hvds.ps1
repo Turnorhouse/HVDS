@@ -69,7 +69,7 @@ Function HVDS_Build
 # Set AD admin password
   $creds.accounts.hostname = ($layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn)
   $creds.accounts.function = 'AD_Admin'
-  $creds.accounts.pass = [System.Web.Security.Membership]::GeneratePassword(15,1)
+  $creds.accounts.pass = [System.Web.Security.Membership]::GeneratePassword(15,0)
 # End building of creds.xml
 
 # Fix Windows ISO (obnoxious "Press any key to boot from DVD...")
@@ -96,14 +96,14 @@ Function HVDS_Build
     $newcred = $creds.AppendChild($credlist.CreateElement('accounts'))
     $newcred.SetAttribute('hostname',$vmname)
     $newcred.SetAttribute('user','Administrator')
-    $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,1))
+    $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,0))
     $newcred.SetAttribute('function','local')
     if ($vm.function -like 'DC')
      {
       $newcred = $creds.AppendChild($credlist.CreateElement('accounts'))
       $newcred.SetAttribute('hostname',$vmname)
       $newcred.SetAttribute('user','Administrator')
-      $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,1))
+      $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,0))
       $newcred.SetAttribute('function','AD_Safe')
      }
     $newcred.SetAttribute('stack',$vm.function)
