@@ -57,9 +57,9 @@ Function HVDS_Build
 
 # Build the start of our password XML file. Note that this is plain text, human readable, and exists ONLY for the process of allowing the user to change passwords.
   $credlist = New-Object System.Xml.XmlDocument
-  $creds = $credlist.CreateElement('creds')
-  $credlist.AppendChild($creds)
-  $accounts = $creds.AppendChild($credlist.CreateElement('accounts'))
+  $credxml = $credlist.CreateElement('creds')
+  $credlist.AppendChild($credxml)
+  $accounts = $credxml.AppendChild($credlist.CreateElement('accounts'))
   $accounts.SetAttribute('hostname','changeme')
   $accounts.SetAttribute('user','Administrator')
   $accounts.SetAttribute('pass','changeme')
@@ -67,9 +67,9 @@ Function HVDS_Build
 # Base creds.xml has been created.
 
 # Set AD admin password
-  $creds.accounts.hostname = ($layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn)
-  $creds.accounts.function = 'AD_Admin'
-  $creds.accounts.pass = [System.Web.Security.Membership]::GeneratePassword(15,0)
+  $credxml.accounts.hostname = ($layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn)
+  $credxml.accounts.function = 'AD_Admin'
+  $credxml.accounts.pass = [System.Web.Security.Membership]::GeneratePassword(15,0)
 # End building of creds.xml
 
 # Fix Windows ISO (obnoxious "Press any key to boot from DVD...")
@@ -93,14 +93,14 @@ Function HVDS_Build
       {($null -eq $vm.ver) -and ($null -ne $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function+$vm.unit}
       {($null -ne $vm.ver) -and ($null -ne $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function+$vm.ver+$vm.unit}
      }
-    $newcred = $creds.AppendChild($credlist.CreateElement('accounts'))
+    $newcred = $credxml.AppendChild($credlist.CreateElement('accounts'))
     $newcred.SetAttribute('hostname',$vmname)
     $newcred.SetAttribute('user','Administrator')
     $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,0))
     $newcred.SetAttribute('function','local')
     if ($vm.function -like 'DC')
      {
-      $newcred = $creds.AppendChild($credlist.CreateElement('accounts'))
+      $newcred = $credxml.AppendChild($credlist.CreateElement('accounts'))
       $newcred.SetAttribute('hostname',$vmname)
       $newcred.SetAttribute('user','Administrator')
       $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,0))
@@ -111,9 +111,9 @@ Function HVDS_Build
     $credlist.Save($hvdsdir.SelectedPath+'\XML\creds.xml')
 
 # Set unattend.xml local admin password. This is plain text and human readable. As the expectation is to change the password on script completion, and they are already human readable with creds.xml there is little harm in doing this.
-    $unattendxml.unattend.settings.component[2].AutoLogon.Password.value = (($creds.accounts|Where-Object {$_.hostname -eq $vmname})|Where-Object {$_.function -eq 'local'}).pass
+    $unattendxml.unattend.settings.component[2].AutoLogon.Password.value = (($credxml.accounts|Where-Object {$_.hostname -eq $vmname})|Where-Object {$_.function -eq 'local'}).pass
     $unattendxml.unattend.settings.component[2].AutoLogon.Password.PlainText = 'True'
-    $unattendxml.unattend.settings.component[2].UserAccounts.AdministratorPassword.Value = (($creds.accounts|Where-Object {$_.hostname -eq $vmname})|Where-Object {$_.function -eq 'local'}).pass
+    $unattendxml.unattend.settings.component[2].UserAccounts.AdministratorPassword.Value = (($credxml.accounts|Where-Object {$_.hostname -eq $vmname})|Where-Object {$_.function -eq 'local'}).pass
     $unattendxml.unattend.settings.component[2].Useraccounts.AdministratorPassword.PlainText = 'True'
 
 # Set unattend.xml install image (Standard / Standard Core / Datacenter / Datacenter Core)
