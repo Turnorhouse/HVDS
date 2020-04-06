@@ -70,6 +70,9 @@ Function HVDS_Build
   $credxml.accounts.hostname = ($layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn)
   $credxml.accounts.function = 'AD_Admin'
   $credxml.accounts.pass = [System.Web.Security.Membership]::GeneratePassword(15,0)
+  $credxml.accounts.pass = $credxml.accounts.pass -replace '&','1'
+  $credxml.accounts.pass = $credxml.accounts.pass -replace '<','2'
+  $credxml.accounts.pass = $credxml.accounts.pass -replace '>','3'
 # End building of creds.xml
 
 # Fix Windows ISO (obnoxious "Press any key to boot from DVD...")
@@ -93,17 +96,23 @@ Function HVDS_Build
       {($null -eq $vm.ver) -and ($null -ne $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function+$vm.unit}
       {($null -ne $vm.ver) -and ($null -ne $vm.unit)} {$vmname = $layoutxml.layout.deployment.site+$layoutxml.layout.deployment.platform+$vm.function+$vm.ver+$vm.unit}
      }
-    $newcred = $credxml.AppendChild($credlist.CreateElement('accounts'))
-    $newcred.SetAttribute('hostname',$vmname)
-    $newcred.SetAttribute('user','Administrator')
-    $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,0))
-    $newcred.SetAttribute('function','local')
-    if ($vm.function -like 'DC')
+     $newcred = $credxml.AppendChild($credlist.CreateElement('accounts'))
+     $newcred.SetAttribute('hostname',$vmname)
+     $newcred.SetAttribute('user','Administrator')
+     $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,0))
+     $newcred.pass = $newcred.pass -replace '&','1'
+     $newcred.pass = $newcred.pass -replace '<','2'
+     $newcred.pass = $newcred.pass -replace '>','3'
+     $newcred.SetAttribute('function','local')
+     if ($vm.function -like 'DC')
      {
       $newcred = $credxml.AppendChild($credlist.CreateElement('accounts'))
       $newcred.SetAttribute('hostname',$vmname)
       $newcred.SetAttribute('user','Administrator')
       $newcred.SetAttribute('pass',[System.Web.Security.Membership]::GeneratePassword(15,0))
+      $newcred.pass = $newcred.pass -replace '&','1'
+      $newcred.pass = $newcred.pass -replace '<','2'
+      $newcred.pass = $newcred.pass -replace '>','3'
       $newcred.SetAttribute('function','AD_Safe')
      }
     $newcred.SetAttribute('stack',$vm.function)
@@ -124,11 +133,11 @@ Function HVDS_Build
     $unattendxml.unattend.settings.component[3].Interfaces.Interface.Routes.Route.NextHopAddress = $layoutxml.layout.network.ipv4.prefix+'.'+$layoutxml.layout.network.gateway
 
 # Adjust DNS for testing.
- #$unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = '4.2.2.2'
+$unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = '4.2.2.2'
 
 # Set DNS based on DC01 / DC02. Can be changed if NS01 / NS02 are brought into play. NS01/NS02 feature not yet written or planned.
-    $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = $layoutxml.layout.network.ipv4.prefix+'.'+(($layoutxml.layout.virtual.vm|Where-Object {$_.function -eq 'DC'})|Where-Object {$_.Unit -eq '01'}).ip
-    $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[1].'#text' = $layoutxml.layout.network.ipv4.prefix+'.'+(($layoutxml.layout.virtual.vm|Where-Object {$_.function -eq 'DC'})|Where-Object {$_.Unit -eq '02'}).ip
+#    $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = $layoutxml.layout.network.ipv4.prefix+'.'+(($layoutxml.layout.virtual.vm|Where-Object {$_.function -eq 'DC'})|Where-Object {$_.Unit -eq '01'}).ip
+#    $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[1].'#text' = $layoutxml.layout.network.ipv4.prefix+'.'+(($layoutxml.layout.virtual.vm|Where-Object {$_.function -eq 'DC'})|Where-Object {$_.Unit -eq '02'}).ip
     $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSDomain = $layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn
 
 # Set unattend.xml product key
@@ -153,8 +162,8 @@ Function HVDS_Build
 # Set unattend.xml first logon command #3 description and command
 # This runs C:\prebuild.ps1
     $unattendxml.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].Description = 'Begin prebuild process'
-    $unattendxml.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;postconfig`""
-
+    $unattendxml.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = "powershell.exe -noexit `". C:\HVDS\POSTCONFIG\prebuild.ps1;WSUSUpdate`""
+#    $unattendxml.unattend.settings.component[2].FirstLogonCommands.SynchronousCommand[2].CommandLine = "powershell.exe"
 # Write the updated autounattend.xml
     $unattendxml.Save($hvdsdir.SelectedPath+'\XML\autounattend.xml')
 

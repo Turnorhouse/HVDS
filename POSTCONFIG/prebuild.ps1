@@ -1,154 +1,97 @@
-Function WSUSUpdate {
-    $hvds = 'C:\HVDS'
-    $hvdslogs = ([STRING]::Concat($hvds,'\logs'))
-    $Criteria = "IsInstalled=0 and Type='Software'"
-    $Searcher = New-Object -ComObject Microsoft.Update.Searcher
-    if ((Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run).PSObject.Properties.Name -contains 'WSUSUpdate')
-     {
-      Remove-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run -Name 'WSUSUpdate'
-     }
-    if (!(Test-Path ([STRING]::Concat($hvds,'\XML'))))
-     {
-      Write-Host ([STRING]::Concat($hvds,'\XML does not exist, can not continue.'))
-      Break
-     }
-     if (!(Test-Path ([STRING]::Concat($hvds,'\XML\creds.xml'))))
-     {
-      Write-Host ([STRING]::Concat($hvds,'\XML\creds.xml does not exist, can not continue.'))
-      Break
-     }
-    if ((Test-Path -Path $hvdslogs) -ne 'True')
-     {
-      New-Item -ItemType Directory -Path $hvdslogs
-     }
-    if (!(Test-Path -Path ([STRING]::Concat($hvdslogs,'\update.log'))))
-     {
-      New-Item -ItemType File -Path ([STRING]::Concat($hvdslogs,'\update.log'))
-     }
-    [XML]$creds = Get-Content ([STRING]::Concat($hvds,'\XML\creds.xml'))
-    # Set registry keys for auto-logon
-    Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoAdminLogon' -Value 1
-    Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultUserName' -Value 'Administrator'
-    Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultPassword' -Value (($creds.creds.accounts|Where-Object {$_.hostname -like $ENV:COMPUTERNAME})|Where-Object {$_.function -like 'local'}).pass
-    # Begin update loops
-    $SearchResult = $Searcher.Search($Criteria).Updates
-    $SearchResult|Select-Object Title,Description,SupportURL|Format-List|Out-File ([STRING]::Concat($hvdslogs,'\update.log')) -Append
-    if ($SearchResult.Count -eq 0) 
-     {
-      Write-Output 'There are no applicable updates.'|Out-File ([STRING]::Concat($hvdslogs,'\update.log')) -Append
-      New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'Postconfig' -Value "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;postconfig`""
-      Write-Host 'Begin 60 second debug sleep'
-      Start-Sleep -Seconds 60
-      Restart-Computer
-     } 
-      else 
-       {
-        $Session = New-Object -ComObject Microsoft.Update.Session
-        $Downloader = $Session.CreateUpdateDownloader()
-        $Downloader.Updates = $SearchResult
-        $Downloader.Download()
-        $Installer = New-Object -ComObject Microsoft.Update.Installer
-        $Installer.Updates = $SearchResult
-        $Installer.Install()|Out-File ([STRING]::Concat($hvdslogs,'\update.log')) -Append
-        if (!(Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce).PSObject.Properties.Name -contains 'WSUSUpdate')
-        {
-          New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'WSUSUpdate' -Value "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;WSUSUpdate`""
-        }
-        Write-Host 'Begin 60 second debug sleep'
-        Start-Sleep -Seconds 60
-        Restart-Computer
-       }
-   }
-
-Function postconfig
+Function WSUSUpdate
+# Note that WSUSUpdate runs before anything builds. If enabled, the only thing to happen prior to update cycles is verification of internet and DNS resolution using public DNS servers.
  {
-  $hvds = 'C:\HVDS'
-  [XML]$layout = Get-Content ([STRING]::Concat($hvds,'\XML\layout.xml'))
-  [XML]$creds = Get-Content ([STRING]::Concat($hvds,'\XML\creds.xml'))
-  $node = ($creds.creds.accounts|Where-Object {$_.hostname -like $ENV:COMPUTERNAME})
-  if (!($null -eq $creds.creds.accounts|Where-Object {$_.hostname -like $ENV:COMPUTERNAME}).count)
+  $hvdsdir = 'C:\HVDS'
+  $criteria = "IsInstalled=0 and Type='Software'"
+  $searcher = New-Object -ComObject Microsoft.Update.Searcher
+  if ((Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run).PSObject.Properties.Name -contains 'WSUSUpdate')
    {
-    if (($node.stack -eq 'dc') -and ($node.unit -eq '01'))
-   {
-    $function = 'dc01'
+    Remove-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run -Name 'WSUSUpdate'
    }
-    elseif (($node.stack -eq 'dc') -and ($node.stack -ne '01'))
-   {
-    Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip)))
-    While ($null -eq (Test-Connection ([STRING]::Concat('hvdsbuild.',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -ErrorAction SilentlyContinue))
-     {
-      Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
-      Start-Sleep -Seconds 120
-     }
-    $function = 'dcX'
+  Switch ($switch)
+   { 
+    {!(Test-Path ($hvdsdir+'\XML'))} {Write-Host -ForegroundColor Red('Directory '+$hvdsdir+'\XML does not exist - Exiting.') ;break}
+    {!(Test-Path ($hvdsdir+'\XML\creds.xml'))} {Write-Host -ForegroundColor Red('HVDS required config file, '+$hvdsdir+'\XML\creds.xml does not exist - Exiting.') ;break}
+    {!(Test-Path ($hvdsdir+'\LOGS'))} {New-Item -ItemType Directory -Path ($hvdsdir+'\LOGS')}
+    {(Test-Path $hvdsdir+'\LOGS\update.log')}{attrib.exe -s -h -r ($hvdsdir+'\LOGS\update.log')}
+    {!(Test-Path ($hvdsdir+'\LOGS\update.log'))} {New-Item -ItemType File -Path ($hvdsdir+'\LOGS\update.log')}
    }
-    elseif ($node.stack -eq 'orca')
-     {
-      Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))),([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '02'}).ip)))
-      While ($null -eq (Test-Connection ([STRING]::Concat('hvdsbuild.',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -ErrorAction SilentlyContinue))
-       {
-        Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
-        Start-Sleep -Seconds 120
-       }
-      $function = $node.stack
-     }
-    else
+  $searchresults = $searcher.Search($criteria).Updates
+  $searchresults|Select-Object Title,Description,SupportURL|Format-List|Out-File ($hvdsdir+'\LOGS\update.log') -Append
+  if ($searchresults.Count -eq 0)
    {
-    $function = $node.stack
-    Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '01'}).ip))),([STRING]::Concat($layout.layout.network.ipv4.prefix,'.',(($layout.layout.virtual.vm|Where-Object {$_.function -like '*dc*'}|Where-Object {$_.unit -eq '02'}).ip)))
-    While ($null -eq (Test-Connection ([STRING]::Concat('hvdsbuild.',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))-ErrorAction SilentlyContinue))
-     {
-      Write-Host -ForegroundColor Yellow ([STRING]::Concat('Waiting for ',$layout.layout.deployment.project,'.',$layout.layout.network.dns.upn,' to become live. Will try again in 120 seconds.'))
-      Start-Sleep -Seconds 120
-     }
-     $user = ([STRING]::Concat($layout.layout.deployment.project,'\',($creds.creds.accounts|Where-Object {$_.function -like 'AD_Admin'}).user))
-     $pass = ConvertTo-SecureString -AsPlainText -Force ($creds.creds.accounts|Where-Object {$_.function -eq 'AD_Admin'}).pass
-     $adlogon = New-Object System.Management.Automation.PSCredential ($user,$pass)
-     Add-Computer -DomainName ([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn)) -Credential $adlogon
-     Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultUserName' -Value ([STRING]::Concat($layout.layout.deployment.project,'\',($creds.creds.accounts|Where-Object {$_.function -like 'AD_Admin'}).user))
-     Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultPassword' -Value (($creds.creds.accounts|Where-Object {$_.hostname -like([STRING]::Concat($layout.layout.deployment.project,'.',$layout.layout.network.dns.upn))})|Where-Object {$_.function -like 'AD_Admin'}).pass  
-    }
+    Write-Output 'There are no applicable updates.'|Out-File ($hvdsdir+'\LOGS\update.log') -Append
+    New-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce -Name 'Postconfig' -Value "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;Postconfig`""
+    Restart-Computer   
   }
- 
-Switch ($function)
- {
-  dc01
+  else
    {
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'FirstDC' -Value ([STRING]::Concat('powershell.exe . ',$hvds,'\postconfig\firstdc.ps1;FirstDC'))
-   }
-  dcX
-   {
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'NextDC' -Value ([STRING]::Concat('powershell.exe . ',$hvds,'\postconfig\nextdc.ps1;NextDC'))
-   }
-  orca
-   {
-    Write-Host 'Build out the Offline Root Certificate Authority'
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'ORCA' -Value ([STRING]::Concat('powershell.exe . ',$hvds,'\postconfig\ORCA.ps1;ORCA'))
-
-   }
-  esca
-   {
-    Write-Host 'Build out the Enterprise Subordinate Certificate Authority'
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'ESCA' -Value ([STRING]::Concat('powershell.exe . ',$hvds,'\postconfig\ESCA.ps1;ESCA'))
-   }
-  adfs
-   {
-    Write-Host 'Build out Active Directory Federation Services'
-   }
-  adds
-   {
-    Write-Host 'Build out azure Active Directory Directory Sync'
-   }
-  exch
-   {
-    Write-Host 'Build out EXCHange server'
-   }
-  sfb
-   {
-    Write-Host 'Build out Skype For Business server'
+    $session = New-Object -ComObject Microsoft.Update.Session
+    $downloader = $session.CreateUpdateDownloader()
+    $downloader.Updates = $searchresults
+    $downloader.Download()
+    $installer = New-Object -ComObject Microsoft.Update.Installer
+    $installer.Updates = $searchresults
+    $installer.Install()|Out-File ($hvdsdir+'\LOGS\update.log') -Append
+    New-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce -Name 'WSUSUpdate' -Value "powershell `". C:\HVDS\POSTCONFIG\prebuild.ps1;WSUSUpdate`""
+    Restart-Computer
    }
  }
- Write-Host 'Begin 60 second debug sleep'
- Start-Sleep -Seconds 60
-Restart-Computer
+
+Function Postconfig
+ {
+  $hvdsdir = 'C:\HVDS'
+  [XML]$layoutxml = Get-Content ($hvdsdir+'\XML\layout.xml')
+  [XML]$credxml = Get-Content ($hvdsdir+'\XML\creds.xml')
+  $node = ($credxml.creds.accounts|Where-Object {$_.hostname -eq $ENV:COMPUTERNAME})
+  $dc01ip = ($layoutxml.layout.virtual.vm|Where-Object ({$_.function -eq 'dc' -and $_.unit -eq '01'})).ip
+  $dc02ip = ($layoutxml.layout.virtual.vm|Where-Object ({$_.function -eq 'dc' -and $_.unit -eq '02'})).ip
+  Switch ($vmfunction)
+   {
+    {(($node.stack -eq 'dc') -and ($node.unit -eq '01'))} {$postconfig = 'FirstDC'}
+    {(($node.stack -eq 'dc') -and ($node.unit -ne '01'))}
+    {
+     Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ($layoutxml.layout.network.ipv4.prefix+'.'+$dc01ip),($layoutxml.layout.network.ipv4.prefix+'.'+$dc02ip)
+     While (!(Test-Connection ('adready.'+$layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn) -ErrorAction SilentlyContinue))
+      {
+       Write-Host -ForegroundColor Yellow ('Waiting for '+$layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn+' to become live. Will try again in 60 seconds.')
+       Start-Sleep -Seconds 60
+      }
+     $postconfig = 'NextDC'
+    }
+    {($node.stack -eq 'orca')}
+     {
+      Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ($layoutxml.layout.network.ipv4.prefix+'.'+$dc01ip),($layoutxml.layout.network.ipv4.prefix+'.'+$dc02ip)
+      While (!(Test-Connection ('adready.'+$layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn) -ErrorAction SilentlyContinue))
+      {
+       Write-Host -ForegroundColor Yellow ('Waiting for '+$layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn+' to become live. Will try again in 60 seconds.')
+       Write-Host -ForegroundColor Yellow ($ENV:COMPUTERNAME+' will not be bound to '+$layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn+'.')
+       Start-Sleep -Seconds 60
+      }
+     $postconfig = 'ORCA'
+    }
+# Set default switch to join domain. Set specific for member servers (dc01 / dc02 / orca) Pull function from creds.xml or layout.xml, default populate from that function data.
+    Default
+     {    
+      Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses ($layoutxml.layout.network.ipv4.prefix+'.'+$dc01ip),($layoutxml.layout.network.ipv4.prefix+'.'+$dc02ip)
+      While (!(Test-Connection ('adready.'+$layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn) -ErrorAction SilentlyContinue))
+      {
+       Write-Host -ForegroundColor Yellow ('Waiting for '+$layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn+' to become live. Will try again in 60 seconds.')
+       Start-Sleep -Seconds 60
+      }
+      $aduser = ($layoutxml.layout.deployment.project+'\'+($credxml.creds.accounts|Where-Object {$_.Function -eq 'AD_Admin'}).user)
+      $adpass = ConvertTo-SecureString -AsPlainText -Force ($credxml.creds.accounts|Where-Object {$_.Function -eq 'AD_Admin'}).pass
+      $adcred = New-Object System.Management.Automation.PSCredential ($aduser,$adpass)
+      Add-Computer -DomainName ($layoutxml.layout.deployment.project+'.'+$layoutxml.layout.network.dns.upn) -Credential $adcred
+      $postconfig = $node.stack
+      Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'AutoAdminLogon' -Value 1
+
+      # Change user name and test.
+      Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultUserName' -Value ($layoutxml.layout.deployment.project+'\'+($credxml.creds.accounts|Where-Object {$_.function -like 'AD_Admin'}).user)
+      Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'DefaultPassword' -Value ($credxml.creds.accounts|Where-Object {$_.function -like 'AD_Admin'}).pass
+       }
+    }
+  $runonce = ('powershell.exe . '+$hvdsdir+'\postconfig\'+$postconfig+'.ps1'+';'+$postconfig)
+  New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name $postconfig -Value $runonce
+  Restart-Computer
 }
