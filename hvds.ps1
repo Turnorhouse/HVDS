@@ -12,6 +12,7 @@ Function HVDS_Build
   $hvdswiniso = New-Object System.Windows.Forms.OpenFileDialog
   $hvdswiniso.filter = 'Windows ISO (*windows*.iso)| *windows*.iso'
   $hvdswiniso.ShowDialog()|Out-Null
+  Add-Type -AssemblyName System.Web
 
 # Define VM networking - Need to find a better way to do this...
   $nic1 = 'vLAN'
@@ -133,7 +134,7 @@ Function HVDS_Build
     $unattendxml.unattend.settings.component[3].Interfaces.Interface.Routes.Route.NextHopAddress = $layoutxml.layout.network.ipv4.prefix+'.'+$layoutxml.layout.network.gateway
 
 # Adjust DNS for testing.
-$unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = '4.2.2.2'
+    $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = '4.2.2.2'
 
 # Set DNS based on DC01 / DC02. Can be changed if NS01 / NS02 are brought into play. NS01/NS02 feature not yet written or planned.
 #    $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearchOrder.IpAddress[0].'#text' = $layoutxml.layout.network.ipv4.prefix+'.'+(($layoutxml.layout.virtual.vm|Where-Object {$_.function -eq 'DC'})|Where-Object {$_.Unit -eq '01'}).ip
@@ -212,7 +213,7 @@ $unattendxml.unattend.settings.component[5].Interfaces.Interface.DNSServerSearch
      }
 
 # Hold on to your butts, we're starting VM's...
-  Start-VM -Name $vmname
+#  Start-VM -Name $vmname
 
   }
 # Nuke WINFIX...
